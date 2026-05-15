@@ -1,10 +1,10 @@
-import mongoose, {Schema, schema, Types} from 'mongoose';
-import bcript from "bcript"
+import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto";
 
 
-const userShema = new Schema(
+const userSchema = new Schema(
     {
         avatar : {
             type :{
@@ -13,7 +13,7 @@ const userShema = new Schema(
             },
             default : {
                 url : "https://placehold.net/avatar-4.svg",
-                localPath : String
+                localPath : ""
             }
         },
         username : {
@@ -62,18 +62,26 @@ const userShema = new Schema(
     }
 )
 
-userShema.pre("save", async function (next) {
-    if(!this.isModified("password")) return next();
-    this.password = await bcript.hash(this.password, 10);
-    next();
-})
+// userSchema.pre("save", async function (next) {
+//     if(!this.isModified("password")){
+//         return next();
+//     }
+//     this.password = await bcrypt.hash(this.password, 10);
+//     next();
+// })
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-userShema.methods.isPasswordCorrect = async function (password) {
-    return await bcript.compare(password, this.password)    
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+    return await bcrypt.compare(password, this.password)    
 };
 
 
-userShema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id : this._id,
@@ -88,7 +96,7 @@ userShema.methods.generateAccessToken = function () {
     
 }
 
-userShema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             _id : this._id,
@@ -102,7 +110,7 @@ userShema.methods.generateRefreshToken = function () {
     )
 }
 
-userShema.methods.generateTemporaryToken = function () {
+userSchema.methods.generateTemporaryToken = function () {
 
     const unHashedToken =  crypto.randomBytes(20).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(unHashedToken).digest("hex");
@@ -110,4 +118,5 @@ userShema.methods.generateTemporaryToken = function () {
 
     return {unHashedToken, hashedToken, tokenExpiry}
 }
-export  const User = mongoose.model("User", userShema);
+
+export const User = mongoose.model("User", userSchema);
