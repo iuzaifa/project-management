@@ -7,6 +7,10 @@ import {sendEmail , emailVerificationMailgenContent} from "../utils/Mail.js"
 import jwt from "jsonwebtoken"
 
 
+/**
+ * generateAccessAndRefreshToken()
+ * Generates new access and refresh tokens for authenticated user
+ */
 const generateAccessAndRefresshToken = async (userId) => {
     try {
         const user = await User.findById(userId);
@@ -23,6 +27,10 @@ const generateAccessAndRefresshToken = async (userId) => {
 
 }
 
+/**
+ * registerUser()
+ * Handles new user registration and account creation
+ */
 const registerUser = asyncHandler(async (req, res) => {
 
     const {email, username, password, role} = req.body;
@@ -81,6 +89,10 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 
+/**
+ * login()
+ * Authenticates user and returns login tokens
+ */
 const login = asyncHandler(async (req, res) => {
     const {email, password} = req.body;
     if(!email){
@@ -128,6 +140,10 @@ const login = asyncHandler(async (req, res) => {
 })
 
 
+/**
+ * logoutUser()
+ * Logs out user and removes/invalidate refresh token
+ */
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
@@ -155,6 +171,10 @@ const logoutUser = asyncHandler(async (req, res) => {
         
 })
 
+/**
+ * getCurrentUser()
+ * Returns currently logged-in user information
+ */
 const getCurrentUser = asyncHandler ( async ( req, res ) => {
     return res.status(200)
         .json(new ApiResponse (
@@ -164,6 +184,11 @@ const getCurrentUser = asyncHandler ( async ( req, res ) => {
         ))
 })
 
+
+/**
+ * verifyEmail()
+ * Verifies user email using verification token/link
+ */
 
 const verifyEmail = asyncHandler ( async ( req, res ) => {
     const verificationToken = req.params;
@@ -196,6 +221,11 @@ const verifyEmail = asyncHandler ( async ( req, res ) => {
         ))
 
 })
+
+/**
+ * resendEmailVerification()
+ * Resends email verification link to the user
+ */
 
 const resendEmailVerification = asyncHandler ( async ( req, res ) => {
     
@@ -237,6 +267,10 @@ const resendEmailVerification = asyncHandler ( async ( req, res ) => {
     }
 })
 
+/**
+ * refreshAccessToken()
+ * Generates new access token using refresh token
+ */
 const refreshAccessToken = asyncHandler ( async ( req, res ) => {
 
     const incommingRefreshToken = req.cookies.refreshAccess || req.body.refreshAccess;
@@ -277,6 +311,9 @@ const refreshAccessToken = asyncHandler ( async ( req, res ) => {
     }
 
 })
+
+
+
 
 
 // const getCurrentUser = asyncHandler ( async ( req, res ) => {})
