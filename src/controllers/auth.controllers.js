@@ -348,7 +348,36 @@ const forgotPasswordRequest = asyncHandler ( async ( req, res ) => {
 
 })
 
+/**
+ * resetForgotPassword()
+ * Resets user password using password reset token
+ */
+const resetForgotPassword = asyncHandler ( async ( req, res ) => {
 
+    const {resetToken} = req.params;
+    const {newPassword} = req.body;
+
+    let hashedToken = crypto.create("sha256").update(resetToken).digest("hex")
+
+    const user = await User.findOne({
+        forgotPasswordToken : hashedToken,
+        forgotPasswordExpiry : {$gt : Date.now()}
+    })
+
+    if (!user) {
+        throw new ApiError(401, "Token is invalid or expired");
+    }
+
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordExpiry = undefined;
+
+    user.password = newPassword
+    await User.save({validateBeforeSave : false})
+
+    return res.status(200).json(new ApiResponse (
+        200,{}, "Reset password successfully "
+    ))
+})
 
 
 
@@ -357,4 +386,7 @@ const forgotPasswordRequest = asyncHandler ( async ( req, res ) => {
 
 
 // const getCurrentUser = asyncHandler ( async ( req, res ) => {})
-export {registerUser, login, logoutUser, verifyEmail, resendEmailVerification, refreshAccessToken, forgotPasswordRequest};
+export {
+    registerUser, login, logoutUser, verifyEmail, resendEmailVerification,
+    refreshAccessToken, forgotPasswordRequest ,resetForgotPassword
+};
