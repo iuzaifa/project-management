@@ -4,6 +4,7 @@ import {ApiResponse} from "../utils/api-response.js";
 import ApiError from "../utils/api-error.js";
 import asyncHandler from "../utils/async-handler.js"
 import {sendEmail , emailVerificationMailgenContent} from "../utils/Mail.js"
+import jwt from "jsonwebtoken"
 
 
 const generateAccessAndRefresshToken = async (userId) => {
@@ -234,10 +235,49 @@ const resendEmailVerification = asyncHandler ( async ( req, res ) => {
     } catch (error) {
        console.error("Erorr : ", error)
     }
+})
+
+const refreshAccessToken = asyncHandler ( async ( req, res ) => {
+
+    const incommingRefreshToken = req.cookies.refreshAccess || req.body.refreshAccess;
+    if(!incommingRefreshToken){
+        throw new ApiError(401, "Unauthorized access")
+    }
+
+    try {
+        const decodedToken = jwt.verify(incommingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decodedToken?._id);
+        if(!user){
+            throw new ApiError(401, "Invalid refresh token")
+        }
+
+        if(incommingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401, "Refresh token is expired ")
+        }
+
+        const options = {
+            httpOnly : true,
+            secure : true,
+        }
+        // refreshToken: newRefreshToken is mean cast in new var
+        const {accessToken, refreshToken: newRefreshToken} = await generateAccessAndRefresshToken(user._id);
+        
+        user.refreshToken = newRefreshToken;
+        await user.save()
+        return res.status(200)
+            .console("accessToken", accessToken, options)
+            .console("refreshToken", newRefreshToken, options)
+            .json(new ApiResponse(200,{accessToken, refreshToken: newRefreshToken},"Access token refreshed"
+        ))
+
+        
+
+    } catch (error) {
+        
+    }
 
 })
 
 
-
 // const getCurrentUser = asyncHandler ( async ( req, res ) => {})
-export {registerUser, login, logoutUser, verifyEmail, resendEmailVerification};
+export {registerUser, login, logoutUser, verifyEmail, resendEmailVerification, refreshAccessToken};
