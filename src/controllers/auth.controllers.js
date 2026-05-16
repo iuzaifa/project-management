@@ -3,7 +3,7 @@ import {User} from "../models/user.models.js";
 import {ApiResponse} from "../utils/api-response.js";
 import ApiError from "../utils/api-error.js";
 import asyncHandler from "../utils/async-handler.js"
-import {sendEmail , emailVerificationMailgenContent} from "../utils/Mail.js"
+import {sendEmail , emailVerificationMailgenContent, forgotPasswordMailgenContent} from "../utils/Mail.js"
 import jwt from "jsonwebtoken"
 
 
@@ -313,8 +313,48 @@ const refreshAccessToken = asyncHandler ( async ( req, res ) => {
 })
 
 
+/**
+ * forgotPasswordRequest()
+ * Sends password reset link/email to the user
+ */
+const forgotPasswordRequest = asyncHandler ( async ( req, res ) => {
+
+    const {email} = req.body;
+    const user = await User.findOne({email});
+    if(!user){
+        throw new ApiError(404, "User does not exits")
+    }
+
+    const {unHashedToken, hashedToken, tokenExpiry} = user.generateTemporaryToken();
+    user.forgotPasswordToken = hashedToken;
+    user.forgotPasswordExpiry = tokenExpiry;
+
+    await user.save({validateBeforeSave : false})
+
+    await sendEmail ({
+        email : user?.email,
+        subject : "Password reset request",
+        mailgenContent : forgotPasswordMailgenContent(
+            user.username,
+            `${process.env.FROGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`
+        )
+    })
+
+    return res.status(200).json(new ApiResponse(
+        200,
+        {},
+        "Password reset mail has been send on your mail ID"
+    ))
+
+})
+
+
+
+
+
+
 
 
 
 // const getCurrentUser = asyncHandler ( async ( req, res ) => {})
-export {registerUser, login, logoutUser, verifyEmail, resendEmailVerification, refreshAccessToken};
+export {registerUser, login, logoutUser, verifyEmail, resendEmailVerification, refreshAccessToken, forgotPasswordRequest};
